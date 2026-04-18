@@ -1,0 +1,25 @@
+# Phoenix local infrastructure.
+# Postgres 17 with pgcrypto (gen_random_uuid, digest) and pgvector (later use).
+# Data persists to a named volume so restarts don't wipe state.
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    container_name: phoenix-db
+    environment:
+      POSTGRES_USER: phoenix
+      POSTGRES_PASSWORD: phoenix
+      POSTGRES_DB: phoenix
+    ports:
+      - "5432:5432"
+    volumes:
+      - phoenix_db:/var/lib/postgresql/data
+      - ./infra/db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U phoenix -d phoenix"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  phoenix_db:

@@ -1,0 +1,97 @@
+# Phoenix action policy — whitelist autonomy model.
+# Every agent action is classified at runtime as one of: auto | approval | blocked.
+#
+# Matching order:
+#   1. Exact (agent, action_type) match with predicates — first match wins.
+#   2. Exact (agent, action_type) match without predicates.
+#   3. Wildcard (agent: '*', action_type) match.
+#   4. Default (fail closed): approval.
+#
+# Predicates are evaluated by the policy engine against the action's args and run context.
+
+version: 1
+
+rules:
+  # -----------------------------
+  # Mercury (Gmail)
+  # -----------------------------
+  - agent: mercury
+    action_type: gmail.label
+    decision: auto
+
+  - agent: mercury
+    action_type: gmail.archive
+    when:
+      category: [transactional, newsletter]
+    decision: auto
+
+  - agent: mercury
+    action_type: gmail.archive
+    decision: approval
+
+  - agent: mercury
+    action_type: gmail.trash
+    when:
+      category: [promotional, noise]
+    decision: auto
+
+  - agent: mercury
+    action_type: gmail.trash
+    when:
+      category: [newsletter]
+    decision: approval
+
+  - agent: mercury
+    action_type: gmail.trash
+    # personal, work, transactional — explicitly blocked.
+    decision: blocked
+
+  - agent: mercury
+    action_type: gmail.draft_reply
+    decision: auto
+
+  - agent: mercury
+    action_type: gmail.send
+    decision: blocked          # v1: never.
+
+  - agent: mercury
+    action_type: gmail.permadelete
+    decision: blocked          # forever.
+
+  # -----------------------------
+  # Mars (Zerodha)
+  # -----------------------------
+  - agent: mars
+    action_type: kite.get_positions
+    decision: auto
+
+  - agent: mars
+    action_type: kite.get_holdings
+    decision: auto
+
+  - agent: mars
+    action_type: kite.get_orderbook
+    decision: auto
+
+  - agent: mars
+    action_type: kite.get_margins
+    decision: auto
+
+  - agent: mars
+    action_type: kite.place_order
+    decision: blocked          # v1: no trading.
+
+  - agent: mars
+    action_type: kite.modify_order
+    decision: blocked
+
+  - agent: mars
+    action_type: kite.cancel_order
+    decision: blocked
+
+  # -----------------------------
+  # Catch-all: any agent, any notification to the user is auto.
+  # -----------------------------
+  - agent: "*"
+    action_type: notify.push
+    decision: auto
